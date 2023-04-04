@@ -1,23 +1,23 @@
-import React , {useState, useEffect, useRef} from 'react';
-import axios from 'axios';
-import Song from './Song';
+import React, { useState, useEffect, useRef } from "react";
+import axios from "axios";
+import Song from "./Song";
 
-const Playlist = props => {
+const Playlist = (props) => {
   const { roomId } = props;
   const [authToken, setAuthToken] = useState();
 
   let url = "http://localhost:3000/api/getAuthToken/" + roomId;
-  axios.get(url).then(response => {
+  axios.get(url).then((response) => {
     setAuthToken(response.data["authToken"]);
-    console.log("autho here" + authToken)
+    console.log("autho here" + authToken);
   });
 
   const config = {
     headers: {
-    Authorization: "Bearer " + authToken,
-    }
-  }
-  const params = {}
+      Authorization: "Bearer " + authToken,
+    },
+  };
+  const params = {};
 
   // HOOKS
   const [searchTerm, setSearchTerm] = useState("");
@@ -46,7 +46,7 @@ const Playlist = props => {
   }
 
   // -------------------------------
-  // REFRESH PLAYLIST 
+  // REFRESH PLAYLIST
   // -------------------------------
 
   const requestPlaylist = async () => {
@@ -56,37 +56,20 @@ const Playlist = props => {
       // console.log("called get playlist");
       console.log(response.data);
       setPlaylist(response.data);
-
-      rows = playlist.map((song) => 
-      <li class="list-group-item d-flex justify-content-between align-items-center" key={song.id}>
-        <Song authToken={authToken} type='playlist' roomId={roomId} upvotes={song.votes} id={song.id} />
-      </li>
-    );
-      return;// response.data;
-    } 
-    catch(error) {
+    } catch (error) {
       console.log(error);
     }
   };
 
-
   useInterval(() => {
-    requestPlaylist()
+    requestPlaylist();
   }, 1000);
 
-
-  // format data from fetch
-  var rows = playlist.map((song) => 
-    <li class="list-group-item d-flex justify-content-between align-items-center" key={song.id}>
-      <Song authToken={authToken} type='playlist' roomId={roomId} upvotes={song.votes} id={song.id} />
-    </li>
-  );
-  
   // -------------------------------
-  // SEARCH REQUEST 
+  // SEARCH REQUEST
   // -------------------------------
 
-  const formatResult = searchResult => {
+  const formatResult = (searchResult) => {
     const trackitems = searchResult.data.tracks.items;
     const parsedResult = trackitems.map(function (track) {
       return {
@@ -100,31 +83,26 @@ const Playlist = props => {
       };
     });
     return parsedResult;
-  }
+  };
 
-  const request = async query => {
+  const request = async (query) => {
     // for now only search by track name
     const url = `https://api.spotify.com/v1/search?q=${query}&type=track&market=CA&limit=10`;
     try {
       if (query === "") {
-        setMatches([]); 
+        setMatches([]);
         return;
       }
-      console.log(config)
+      console.log(config);
       const response = await axios.get(url, config, params);
       // console.log(response);
       const formattedResult = formatResult(response);
       // console.log(formattedResult);
 
-      setMatches(formattedResult.map((song) => 
-        <li class="list-group-item d-flex justify-content-between align-items-center" key={song.id}>
-          <Song authToken={authToken} info={song} upvotes={0} roomId={roomId}></Song>
-        </li>
-      ));
+      setMatches(formattedResult);
 
       return formattedResult;
-    } 
-    catch(error) {
+    } catch (error) {
       console.log(error);
     }
   };
@@ -133,7 +111,7 @@ const Playlist = props => {
   //var searchResults = request('IFLY');
   //console.log(searchResults);
 
-  const handleChange = event => {
+  const handleChange = (event) => {
     setSearchTerm(event.target.value);
     request(searchTerm);
   };
@@ -142,20 +120,54 @@ const Playlist = props => {
   // RENDER
   // -------------------------------
 
+  const listedSongs = (playlist || []).reduce((map, song) => {
+    map[song.id] = true;
+    return map;
+  }, {});
+
   return (
     <div>
       <div className="playlist-container">
         <ul class="mt-4 list-group">
-          {rows}
+          {(playlist || []).map((song) => (
+            <li
+              class="list-group-item d-flex justify-content-between align-items-center"
+              key={song.id}
+            >
+              <Song
+                authToken={authToken}
+                type="playlist"
+                roomId={roomId}
+                upvotes={song.votes}
+                id={song.id}
+              />
+            </li>
+          ))}
           <li class="list-group-item d-flex justify-content-between align-items-center mt-5">
             <input
-              id="search" type="text" class="form-control form-control-lg"
+              id="search"
+              type="text"
+              class="form-control form-control-lg"
               placeholder="Search"
               value={searchTerm}
-              onChange={handleChange}/>
+              onChange={handleChange}
+            />
           </li>
           <div id="match-list">
-            {matches}
+            {(matches || []).map((song) => (
+              <li
+                class="list-group-item d-flex justify-content-between align-items-center"
+                key={song.id}
+              >
+                <Song
+                  authToken={authToken}
+                  info={song}
+                  upvotes={0}
+                  roomId={roomId}
+                  added={listedSongs[song.id]}
+                ></Song>
+              </li>
+            ))}
           </div>
         </ul>
         <button className="standard-button" onClick={requestPlaylist}>
@@ -164,6 +176,6 @@ const Playlist = props => {
       </div>
     </div>
   );
-          }
+};
 
 export default Playlist;
